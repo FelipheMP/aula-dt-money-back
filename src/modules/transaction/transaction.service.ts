@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTransactionDto } from './dto/create-transaction.dto';
 import { UpdateTransactionDto } from './dto/update-transaction.dto';
 import { PrismaService } from 'src/modules/prisma/prisma.service';
 
 @Injectable()
 export class TransactionService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
   async create({ category, data, price, title, type }: CreateTransactionDto) {
     const createdTransaction = await this.prisma.transaction.create({
       data: {
@@ -19,19 +19,37 @@ export class TransactionService {
     return createdTransaction;
   }
 
-  findAll() {
-    return `This action returns all transaction`;
+  async findAll() {
+    return this.prisma.transaction.findMany();
   }
 
-  findOne(id: string) {
-    return `This action returns a #${id} transaction`;
+  async findOne(id: string) {
+    const transaction = await this.prisma.transaction.findUnique({
+      where: { id },
+    });
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+    }
+    return transaction;
   }
 
-  update(id: string, updateTransactionDto: UpdateTransactionDto) {
-    return `This action updates a #${id} transaction`;
+  async update(id: string, updateTransactionDto: UpdateTransactionDto) {
+    const transaction = await this.prisma.transaction.findUnique({ where: { id } });
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+    }
+    return this.prisma.transaction.update({
+      where: { id },
+      data: updateTransactionDto,
+    });
   }
 
-  remove(id: string) {
-    return `This action removes a #${id} transaction`;
+  async remove(id: string) {
+    const transaction = await this.prisma.transaction.findUnique({ where: { id } });
+    if (!transaction) {
+      throw new NotFoundException(`Transaction with id ${id} not found`);
+    }
+    await this.prisma.transaction.delete({ where: { id } });
+    return;
   }
 }
